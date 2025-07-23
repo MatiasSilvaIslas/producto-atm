@@ -36,7 +36,6 @@ public class MovimientoServiceImpl implements MovimientoService {
     @Override
     @Transactional
     public void extraer(String numeroTarjeta, String numeroCuenta, BigDecimal monto) {
-        // Validar tarjeta
         Tarjeta tarjeta = tarjetaRepository.findByNumero(numeroTarjeta)
                 .orElseThrow(() -> new TarjetaNoEncontradaException("Tarjeta no encontrada"));
 
@@ -44,7 +43,6 @@ public class MovimientoServiceImpl implements MovimientoService {
             throw new TarjetaInactivaException("Tarjeta inactiva");
         }
 
-        // Validar cuenta pertenece a la tarjeta
         boolean cuentaValida = tarjeta.getTarjetaCuentas().stream()
                 .map(TarjetaCuenta::getCuenta)
                 .anyMatch(c -> c.getNumero().equals(numeroCuenta));
@@ -53,7 +51,6 @@ public class MovimientoServiceImpl implements MovimientoService {
             throw new CuentaNoEncontradaException("Cuenta no pertenece a la tarjeta");
         }
 
-        // Validar saldo suficiente y hacer extracción
         Cuenta cuenta = cuentaRepository.findByNumero(numeroCuenta)
                 .orElseThrow(() -> new CuentaNoEncontradaException("Cuenta no encontrada"));
 
@@ -74,7 +71,6 @@ public class MovimientoServiceImpl implements MovimientoService {
     @Override
     @Transactional
     public void depositar(String numeroTarjeta, String cbu, BigDecimal monto) {
-        // Validar tarjeta
         Tarjeta tarjeta = tarjetaRepository.findByNumero(numeroTarjeta)
                 .orElseThrow(() -> new TarjetaNoEncontradaException("Tarjeta no encontrada"));
 
@@ -82,7 +78,6 @@ public class MovimientoServiceImpl implements MovimientoService {
             throw new TarjetaInactivaException("Tarjeta inactiva");
         }
 
-        // Validar que la cuenta exista (puede no pertenecer a la tarjeta)
         Cuenta cuenta = cuentaRepository.findByCbu(cbu)
                 .orElseThrow(() -> new CbuNoEncontradoException("CBU no encontrado"));
 
