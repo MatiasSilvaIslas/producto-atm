@@ -1,4 +1,4 @@
-package com.productoatm.model;
+package com.productoatm.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,8 +9,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class DepositoRequest {
-    private String numeroTarjeta;
-    private String cbu;
-    private double importe;
+public class LoginResponseDTO {
+    private boolean exito;
+    private String mensaje;
 }
