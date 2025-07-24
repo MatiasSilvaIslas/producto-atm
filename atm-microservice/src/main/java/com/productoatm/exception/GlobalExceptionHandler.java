@@ -2,7 +2,9 @@ package com.productoatm.exception;
 
 import com.productoatm.dto.LoginResponseDTO;
 import com.productoatm.dto.OperacionResponseDTO;
+import com.productoatm.dto.SaldoResponseDTO;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -37,6 +39,22 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TarjetaNoEncontradaException.class)
     public ResponseEntity<LoginResponseDTO> handleTarjetaNoEncontrada(TarjetaNoEncontradaException ex) {
         return ResponseEntity.status(404).body(new LoginResponseDTO(false, ex.getMessage()));
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<OperacionResponseDTO> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        String errorMessage = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> error.getDefaultMessage())
+                .findFirst()
+                .orElse("Datos inválidos");
+        return ResponseEntity.badRequest().body(new OperacionResponseDTO(false, errorMessage));
+    }
+
+    @ExceptionHandler(CuentaNoAsociadaATarjetaException.class)
+    public ResponseEntity<SaldoResponseDTO> handleCuentaNoAsociada(CuentaNoAsociadaATarjetaException ex) {
+        return ResponseEntity.badRequest().body(new SaldoResponseDTO(false, ex.getMessage(), null));
     }
 
     // Handler genérico

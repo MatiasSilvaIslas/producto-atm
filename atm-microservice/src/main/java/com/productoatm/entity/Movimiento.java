@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Table(name = "movimientos")
 @Getter
 @Setter
-
+@NoArgsConstructor
 public class Movimiento {
 
     @Id

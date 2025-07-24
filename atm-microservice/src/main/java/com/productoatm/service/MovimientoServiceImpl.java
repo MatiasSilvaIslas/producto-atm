@@ -81,6 +81,12 @@ public class MovimientoServiceImpl implements MovimientoService {
         Cuenta cuenta = cuentaRepository.findByCbu(cbu)
                 .orElseThrow(() -> new CbuNoEncontradoException("CBU no encontrado"));
 
+        boolean cuentaAsociada = cuentaRepository.existsByCbuAndTarjetaNumero(cbu, numeroTarjeta);
+
+        if (!cuentaAsociada) {
+            throw new CuentaNoAsociadaATarjetaException("El CBU no está asociado a la tarjeta");
+        }
+
         cuenta.setSaldo(cuenta.getSaldo().add(monto));
         cuentaRepository.save(cuenta);
 
@@ -100,19 +106,18 @@ public class MovimientoServiceImpl implements MovimientoService {
             throw new TarjetaInactivaException("Tarjeta inactiva");
         }
 
+        Cuenta cuenta = cuentaRepository.findByNumero(numeroCuenta)
+                .orElseThrow(() -> new CuentaNoEncontradaException("Cuenta no encontrada"));
+
         boolean cuentaValida = tarjeta.getTarjetaCuentas().stream()
                 .map(TarjetaCuenta::getCuenta)
                 .anyMatch(c -> c.getNumero().equals(numeroCuenta));
 
         if (!cuentaValida) {
-            throw new CuentaNoEncontradaException("Cuenta no pertenece a la tarjeta");
+            throw new CuentaNoAsociadaATarjetaException("La cuenta no pertenece a la tarjeta");
         }
 
-        Cuenta cuenta = cuentaRepository.findByNumero(numeroCuenta)
-                .orElseThrow(() -> new CuentaNoEncontradaException("Cuenta no encontrada"));
-
         log.info("Consulta de saldo realizada para cuenta {}", numeroCuenta);
-
         return cuenta.getSaldo();
     }
 

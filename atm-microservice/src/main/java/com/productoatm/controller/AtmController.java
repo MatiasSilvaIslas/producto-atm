@@ -9,11 +9,15 @@ import com.productoatm.model.ExtraccionRequest;
 import com.productoatm.model.LoginRequest;
 import com.productoatm.service.MovimientoService;
 import com.productoatm.service.TarjetaService;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-
+@Validated
 @RestController
 @RequestMapping("/api")
 public class AtmController {
@@ -27,13 +31,13 @@ public class AtmController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid LoginRequest request) {
         boolean exito = tarjetaService.login(request.getNumeroTarjeta());
         return ResponseEntity.ok(new LoginResponseDTO(exito, exito ? "Ingreso exitoso" : "Ingreso no exitoso"));
     }
 
     @PostMapping("/extraer")
-    public ResponseEntity<OperacionResponseDTO> extraer(@RequestBody ExtraccionRequest request) {
+    public ResponseEntity<OperacionResponseDTO> extraer(@RequestBody @Valid ExtraccionRequest request) {
         try {
             movimientoService.extraer(request.getNumeroTarjeta(), request.getNumeroCuenta(), BigDecimal.valueOf(request.getImporte()));
             return ResponseEntity.ok(new OperacionResponseDTO(true, "Retire su dinero"));
@@ -46,11 +50,11 @@ public class AtmController {
     }
 
     @PostMapping("/depositar")
-    public ResponseEntity<OperacionResponseDTO> depositar(@RequestBody DepositoRequest request) {
+    public ResponseEntity<OperacionResponseDTO> depositar(@RequestBody @Valid DepositoRequest request) {
         try {
             movimientoService.depositar(request.getNumeroTarjeta(), request.getCbu(), BigDecimal.valueOf(request.getImporte()));
             return ResponseEntity.ok(new OperacionResponseDTO(true, "Depósito exitoso"));
-        } catch (CbuNoEncontradoException | TarjetaInactivaException | TarjetaNoEncontradaException ex) {
+        } catch (CbuNoEncontradoException | TarjetaInactivaException | TarjetaNoEncontradaException | CuentaNoAsociadaATarjetaException ex) {
             return ResponseEntity.badRequest().body(new OperacionResponseDTO(false, ex.getMessage()));
         } catch (Exception ex) {
             return ResponseEntity.internalServerError().body(new OperacionResponseDTO(false, "Error al procesar el depósito"));
@@ -58,15 +62,35 @@ public class AtmController {
     }
 
     @GetMapping("/saldo")
-    public ResponseEntity<SaldoResponseDTO> consultarSaldo(@RequestParam String numeroTarjeta,
-                                                           @RequestParam String numeroCuenta) {
+    public ResponseEntity<SaldoResponseDTO> consultarSaldo(
+            @RequestParam
+            @Pattern(regexp = "\\d{4}-\\d{4}-\\d{4}-\\d{4}", message = "Formato inválido para número de tarjeta")
+            String numeroTarjeta,
+            @RequestParam
+            @Pattern(regexp = "CTA-\\d{4}", message = "Formato inválido para número de cuenta")
+            String numeroCuenta) {
         try {
             BigDecimal saldo = movimientoService.consultarSaldo(numeroTarjeta, numeroCuenta);
             return ResponseEntity.ok(new SaldoResponseDTO(true, "Consulta exitosa", saldo));
-        } catch (CuentaNoEncontradaException | TarjetaInactivaException | TarjetaNoEncontradaException ex) {
+        } catch (CuentaNoEncontradaException ex) {
+            System.err.println("CuentaNoEncontradaException capturada: " + ex.getMessage());
             return ResponseEntity.badRequest().body(new SaldoResponseDTO(false, ex.getMessage(), null));
+        } catch (TarjetaInactivaException ex) {
+            System.err.println("TarjetaInactivaException capturada: " + ex.getMessage());
+            return ResponseEntity.badRequest().body(new SaldoResponseDTO(false, ex.getMessage(), null));
+        } catch (TarjetaNoEncontradaException ex) {
+            System.err.println("TarjetaNoEncontradaException capturada: " + ex.getMessage());
+            return ResponseEntity.badRequest().body(new SaldoResponseDTO(false, ex.getMessage(), null));
+        } catch (CuentaNoAsociadaATarjetaException ex) {
+            System.err.println("CuentaNoAsociadaATarjetaException capturada: " + ex.getMessage());
+            return ResponseEntity.badRequest().body(new SaldoResponseDTO(false, ex.getMessage(), null));
+        } catch (ConstraintViolationException ex) {
+            System.err.println("ConstraintViolationException capturada: " + ex.getMessage());
+            String mensaje = ex.getConstraintViolations().iterator().next().getMessage();
+            return ResponseEntity.badRequest().body(new SaldoResponseDTO(false, mensaje, null));
         } catch (Exception ex) {
             return ResponseEntity.internalServerError().body(new SaldoResponseDTO(false, "Error al consultar el saldo", null));
         }
     }
+
 }
