@@ -4,12 +4,11 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- 🔽 Agregá este parent -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.2.5</version>
-        <relativePath/> <!-- para evitar conflictos si estás en subcarpetas -->
+        <relativePath/>
     </parent>
 
     <groupId>com.ejemplo</groupId>
